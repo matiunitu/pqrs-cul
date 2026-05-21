@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistemas PQRS - CUL</title>
+  <meta name="description" content="Sistema de gestión de PQRS universitario con autenticación JWT y roles." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+</head>
+<body>
+
+  <!-- ── Web Component: pantalla de login ─────────────────────────────── -->
+  <login-screen id="loginScreen"></login-screen>
+
+  <!-- ── Web Component: shell del dashboard (oculto hasta login) ──────── -->
+  <app-dashboard id="dashboardShell" hidden></app-dashboard>
+
+  <script src="components/toast-notification.js" type="module"></script>
+  <script src="components/login-screen.js"       type="module"></script>
+  <script src="components/app-dashboard.js"      type="module"></script>
+  <script src="components/stat-card.js"          type="module"></script>
+  <script src="components/data-table.js"         type="module"></script>
+  <script src="components/status-badge.js"       type="module"></script>
+  <script src="components/empty-state.js"        type="module"></script>
+  <script src="app.js"                           type="module"></script>
+</body>
+</html>

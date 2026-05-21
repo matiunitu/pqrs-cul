@@ -139,11 +139,12 @@ class AppDashboard extends HTMLElement {
     `).join('');
 
     this.innerHTML = `
-      <div class="dashboard-layout">
-
+      <div class="dashboard-layout" id="dashLayout">
+        <div class="mobile-overlay" id="mobileOverlay"></div>
         <!-- Navbar -->
         <nav class="app-navbar">
           <div class="navbar-brand" style="display: flex; align-items: center; gap: 10px;">
+            <button class="hamburger-btn" id="menuToggle">☰</button>
             <img src="./assets/logo.png" alt="CUL Logo" style="height: 28px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));" onerror="this.style.display='none'; document.getElementById('fallbackDot').style.display='inline-block';" />
             <span class="dot" id="fallbackDot" style="display:none;"></span>
             Sistemas PQRS - CUL
@@ -151,11 +152,11 @@ class AppDashboard extends HTMLElement {
           <div class="navbar-user">
             <span class="token-timer" id="timerBadge">⏱ 60:00</span>
             <div class="user-avatar" title="${this._user?.nombre}">${initials}</div>
-            <span style="font-size:0.85rem">
+            <span style="font-size:0.85rem; display:none; /* hidden on very small screens, responsive handled in css */" class="user-name-display">
               ${this._user?.nombre}
               <span class="badge badge-accent" style="margin-left:6px">${cfg.label}</span>
             </span>
-            <button class="btn btn-ghost btn-sm" id="logoutBtn">🚪 Salir</button>
+            <button class="btn btn-ghost btn-sm" id="logoutBtn">🚪<span class="hide-mobile"> Salir</span></button>
           </div>
         </nav>
 
@@ -178,8 +179,21 @@ class AppDashboard extends HTMLElement {
     // Events
     this.querySelector('#logoutBtn').onclick = () => logout();
     this.querySelectorAll('.nav-item').forEach(btn => {
-      btn.onclick = () => this._navigate(btn.dataset.section);
+      btn.onclick = () => {
+        this._navigate(btn.dataset.section);
+        // Close sidebar on mobile after clicking a link
+        this.querySelector('#dashLayout').classList.remove('sidebar-open');
+      };
     });
+
+    // Mobile menu toggle
+    const layout = this.querySelector('#dashLayout');
+    this.querySelector('#menuToggle').onclick = () => {
+      layout.classList.toggle('sidebar-open');
+    };
+    this.querySelector('#mobileOverlay').onclick = () => {
+      layout.classList.remove('sidebar-open');
+    };
   }
 
   // ─── Navegación entre secciones ───────────────────────────────────────────

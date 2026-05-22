@@ -15,7 +15,7 @@
 // Detecta automáticamente si estamos en entorno local o en producción (ej. Vercel)
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-export const API_BASE_URL = 'https://pqrs-cul-eee2.onrender.com';
+export const API_BASE_URL = isLocalhost ? 'http://localhost:8000' : 'https://pqrs-cul-eee2.onrender.com';
 
 // ─── Función helper para hacer peticiones a la API ─────────────────────────────
 // Agrega automáticamente el token JWT al header Authorization si existe.

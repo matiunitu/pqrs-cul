@@ -118,3 +118,175 @@ class PqrsController:
             raise HTTPException(status_code=500, detail=str(err))
         finally:
             conn.close()
+
+    def generate_pdf(self, id_pqrs: int):
+        try:
+            from xhtml2pdf import pisa
+            from io import BytesIO
+        except ImportError:
+            raise HTTPException(status_code=500, detail="La librería xhtml2pdf no está instalada.")
+
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT p.*, u.nombre as usuario_nombre
+                FROM pqrs p
+                LEFT JOIN usuarios u ON p.id_usuario = u.id_usuario
+                WHERE p.id_pqrs=%s
+            """, (id_pqrs,))
+            p_data = cur.fetchone()
+            if not p_data:
+                raise HTTPException(status_code=404, detail="PQRS no encontrado")
+            
+            cur.execute("SELECT * FROM respuestas WHERE id_pqrs=%s ORDER BY fecha_respuesta DESC LIMIT 1", (id_pqrs,))
+            resp = cur.fetchone()
+            respuesta_texto = resp['mensaje'] if resp else "Sin respuesta oficial aún."
+
+            TIPO = {1: 'Queja', 2: 'Petición', 3: 'Reclamo', 4: 'Sugerencia'}
+            ESTADO = {1: 'Activo', 2: 'Inactivo'} # Ajusta según tu tabla de estados si es necesario
+            
+            html_template = """<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Constancia de PQRS</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            color: #000000;
+            line-height: 1.5;
+            font-size: 11pt;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #1a365d;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .institution-name {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #1a365d;
+            text-transform: uppercase;
+        }
+        .title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14pt;
+            margin-bottom: 20px;
+        }
+        .intro {
+            text-align: justify;
+            margin-bottom: 30px;
+        }
+        .info-section {
+            margin-bottom: 30px;
+        }
+        .info-row {
+            margin-bottom: 8px;
+        }
+        .info-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 150px;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #1a365d;
+        }
+        .description-box {
+            text-align: justify;
+            margin-bottom: 30px;
+        }
+        .response-box {
+            text-align: justify;
+            border: 1px solid #d1d5db;
+            background-color: #f9fafb;
+            padding: 15px;
+            margin-bottom: 40px;
+        }
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            color: #4b5563;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        .signature-section {
+            margin-top: 60px;
+        }
+        .signature-line {
+            width: 250px;
+            border-bottom: 1px solid #000;
+            margin-bottom: 5px;
+        }
+        .signature-text {
+            font-size: 10pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="institution-name">{institucion}</div>
+    </div>
+    <div class="title">
+        CONSTANCIA DE PQRS
+    </div>
+    <div class="intro">
+        El presente documento certifica el registro y estado actual de la Petición, Queja, Reclamo o Sugerencia (PQRS) presentada ante nuestra institución. A continuación, se detallan los datos correspondientes al caso.
+    </div>
+    <div class="info-section">
+        <div class="info-row"><span class="info-label">Radicado:</span> {radicado}</div>
+        <div class="info-row"><span class="info-label">Fecha:</span> {fecha}</div>
+        <div class="info-row"><span class="info-label">Usuario:</span> {usuario}</div>
+        <div class="info-row"><span class="info-label">Tipo de Solicitud:</span> {tipo}</div>
+        <div class="info-row"><span class="info-label">Estado:</span> {estado}</div>
+    </div>
+    <div class="section-title">Descripción de la Solicitud</div>
+    <div class="description-box">
+        {descripcion}
+    </div>
+    <div class="section-title">Respuesta Oficial</div>
+    <div class="response-box">
+        {respuesta}
+    </div>
+    <div class="signature-section">
+        <div class="signature-line"></div>
+        <div class="signature-text">Firma autorizada</div>
+    </div>
+    <div class="footer">
+        Documento generado automáticamente por el sistema PQRS
+    </div>
+</body>
+</html>"""
+
+            data = {
+                "institucion": "Institución Educativa",
+                "radicado": p_data['radicado'] or f"PQRS-{id_pqrs}",
+                "fecha": p_data['fecha_creacion'].strftime("%d/%m/%Y") if p_data['fecha_creacion'] else "N/A",
+                "usuario": p_data['usuario_nombre'] or f"ID {p_data['id_usuario']}",
+                "tipo": TIPO.get(p_data['id_tipospqrs'], f"Tipo {p_data['id_tipospqrs']}"),
+                "estado": ESTADO.get(p_data['id_estado'], f"ID {p_data['id_estado']}"),
+                "descripcion": p_data['descripcion'] or "Sin descripción",
+                "respuesta": respuesta_texto
+            }
+            html_content = html_template.format(**data)
+            
+            result = BytesIO()
+            pisa_status = pisa.CreatePDF(BytesIO(html_content.encode("utf-8")), dest=result)
+            
+            if pisa_status.err:
+                raise HTTPException(status_code=500, detail="Error al generar el PDF")
+                
+            return result.getvalue()
+        except Exception as err:
+            raise HTTPException(status_code=500, detail=str(err))
+        finally:
+            conn.close()

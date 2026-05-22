@@ -29,3 +29,13 @@ async def update_pqrs(id_pqrs: int, request: Request):
 @router.delete("/delete_pqrs/{id_pqrs}")
 async def delete_pqrs(id_pqrs: int):
     return controller.delete_pqrs(id_pqrs)
+
+@router.get("/pdf/{id_pqrs}")
+async def generate_pdf(id_pqrs: int):
+    from fastapi.responses import Response
+    pdf_bytes = controller.generate_pdf(id_pqrs)
+    return Response(
+        content=pdf_bytes, 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": f'attachment; filename="PQRS_{id_pqrs}.pdf"'}
+    )

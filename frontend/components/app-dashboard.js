@@ -34,7 +34,7 @@
  * ============================================================
  */
 
-import { apiCall, logout } from '../app.js';
+import { apiCall, logout, API_BASE_URL } from '../app.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIGURACIÓN DE MENÚS POR ROL
@@ -599,7 +599,10 @@ class AppDashboard extends HTMLElement {
     modal.innerHTML = `
       <div class="card animate-in" style="width:100%;max-width:650px;max-height:90vh;overflow-y:auto;position:relative;">
         <button id="closeModal" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.8rem;cursor:pointer;color:var(--text);line-height:1">&times;</button>
-        <h2 style="margin-bottom:20px;padding-right:24px;">Detalle de PQRS #${p.id_pqrs}</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-right:30px;">
+          <h2 style="margin:0;">Detalle de PQRS #${p.id_pqrs}</h2>
+          <button id="pdf-btn" class="btn btn-primary btn-sm" title="Generar PDF" style="background:#dc2626; border-color:#dc2626; color:white;">📄 Generar PDF</button>
+        </div>
         
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:20px;font-size:0.9rem;background:var(--bg-base);padding:16px;border-radius:8px;border:1px solid var(--border)">
           <div><strong style="color:var(--text-muted);display:block;font-size:0.75rem">Radicado</strong>${p.radicado ?? '—'}</div>
@@ -664,6 +667,13 @@ class AppDashboard extends HTMLElement {
 
     modal.querySelector('#closeModal').onclick = () => modal.remove();
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+    const pdfBtn = modal.querySelector('#pdf-btn');
+    if (pdfBtn) {
+      pdfBtn.onclick = () => {
+        window.open(`${API_BASE_URL}/pqrs/pdf/${p.id_pqrs}`, '_blank');
+      };
+    }
 
     const updateBtn = modal.querySelector('#admin-update-btn');
     if (updateBtn) {
@@ -979,6 +989,7 @@ class AppDashboard extends HTMLElement {
               <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
                 ${PRIO[p.id_prioridad] ?? ''}
                 ${respBadge}
+                <button class="btn btn-sm btn-pdf-pqrs" data-id="${p.id_pqrs}" title="Generar PDF" style="background:#dc2626; border-color:#dc2626; color:white;">📄 PDF</button>
                 <button class="btn btn-danger btn-sm del-pqrs-btn" data-id="${p.id_pqrs}" title="Eliminar PQRS">🗑</button>
               </div>
             </div>
@@ -992,6 +1003,13 @@ class AppDashboard extends HTMLElement {
         btn.onclick = (e) => {
           e.stopPropagation();
           this._deletePQRS(btn.dataset.id, el);
+        };
+      });
+
+      wrap.querySelectorAll('.btn-pdf-pqrs').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          window.open(`${API_BASE_URL}/pqrs/pdf/${btn.dataset.id}`, '_blank');
         };
       });
     } catch (e) {
